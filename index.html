@@ -51,6 +51,7 @@
             color: white;
             opacity: 0;
             transition: opacity 1s ease-in-out;
+            overflow: hidden; /* For floating hearts */
         }
         
         .page.active {
@@ -85,17 +86,14 @@
             100% { text-shadow: 0 0 5px #fff, 0 0 10px #ffd1e8, 0 0 15px #ff9ac9, 0 0 20px #ff66b3; }
         }
 
-        #image-scan-container, #smile-video-container {
+        #image-scan-container {
             position: relative; width: 220px; height: 280px;
             border-radius: 15px; overflow: hidden;
             box-shadow: 0 0 20px rgba(255, 255, 255, 0.7);
             margin-bottom: 2rem; display: none; background: #333;
         }
-        #purnima-image, #smile-video {
+        #purnima-image {
             width: 100%; height: 100%; object-fit: cover;
-        }
-        #smile-video {
-            transform: scaleX(-1); /* Mirror effect for selfie cam */
         }
         #scanner-line {
             position: absolute; width: 100%; height: 10px;
@@ -135,22 +133,86 @@
 
         .turn-page-btn {
             opacity: 0; transition: opacity 0.5s ease-in-out; pointer-events: none;
+            transform-origin: center;
         }
         .turn-page-btn.visible { opacity: 1; pointer-events: auto; }
+        
+        /* Shaking animation for buttons */
+        .shaking {
+            animation: shake 1.5s ease-in-out infinite;
+        }
+        @keyframes shake {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
 
         /* Chit Game Styles */
         #chit-bowl {
             display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 2rem;
+            flex-wrap: wrap;
         }
         .chit {
             width: 60px; height: 40px; background: #fff8e1; border: 2px solid #ffd54f;
             border-radius: 5px; cursor: pointer; transition: all 0.3s ease;
             box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+            display: flex; justify-content: center; align-items: center; font-size: 1.2rem;
+            color: #4a2d6a; font-weight: bold;
         }
         .chit:hover { transform: translateY(-10px) scale(1.1); }
         .chit.unfolding {
             width: 250px; height: auto; padding: 20px; font-size: 1.2rem;
-            transform: translateY(0) scale(1); cursor: default;
+            transform: translateY(0) scale(1); cursor: default; color: #4a2d6a;
+        }
+        
+        /* Text fade-in animation */
+        .fade-in-text {
+            opacity: 0;
+        }
+        .page.active .fade-in-text {
+            animation: fade-in-up 1s ease-out 1s forwards;
+        }
+        @keyframes fade-in-up {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Typing Animation Styles */
+        #typed-text {
+            max-width: 90%;
+            font-size: 1.1rem;
+            color: #4a2d6a;
+            text-shadow: 1px 1px 2px rgba(255,255,255,0.5);
+            line-height: 1.6;
+            min-height: 250px; /* Reserve space */
+        }
+        .typing-cursor {
+            display: inline-block;
+            width: 8px;
+            height: 1.2rem;
+            background-color: #4a2d6a;
+            animation: blink 0.7s infinite;
+        }
+        @keyframes blink { 50% { opacity: 0; } }
+        
+        /* Floating Hearts Background */
+        .floating-heart {
+            position: absolute;
+            bottom: -50px;
+            font-size: 20px;
+            color: rgba(255, 105, 180, 0.6);
+            animation: float-up linear infinite;
+        }
+        @keyframes float-up {
+            to {
+                transform: translateY(-100vh);
+                opacity: 0;
+            }
         }
     </style>
 </head>
@@ -160,21 +222,11 @@
     <div id="heaven-bg"></div>
 
     <div id="book-container">
-        <!-- New Page 0: Camera Permission -->
-        <div id="page0" class="page active">
-            <h1 class="text-4xl md:text-6xl font-romance glow-text mb-4">A Magical Story</h1>
-            <p class="text-lg max-w-md">This story needs a little magic to begin. To see it, I need to capture your beautiful smile.</p>
-            <button id="camera-btn" class="mt-8 bg-pink-500 text-white font-bold py-3 px-8 rounded-full shadow-lg transform hover:scale-110 transition-transform" onclick="requestCamera()">
-                Allow Magic
-            </button>
-            <p id="camera-error" class="text-red-300 mt-4 hidden">Camera access is needed for the magic to work!</p>
-        </div>
-
         <!-- Chapter 1 -->
-        <div id="page1" class="page">
+        <div id="page1" class="page active">
             <h1 class="text-4xl md:text-6xl font-romance glow-text mb-4">A Story for Purnima</h1>
-            <p class="text-lg">This is the beginning of our forever.</p>
-            <button id="turn-page-btn-1" class="turn-page-btn mt-8 bg-pink-500 text-white font-bold py-3 px-8 rounded-full shadow-lg transform hover:scale-110 transition-transform" onclick="turnToChapter(2)">
+            <p class="text-lg fade-in-text">This is the beginning of our forever.</p>
+            <button id="turn-page-btn-1" class="turn-page-btn mt-8 bg-pink-500 text-white font-bold py-3 px-8 rounded-full shadow-lg" onclick="turnToChapter(2)">
                 Open The Book
             </button>
         </div>
@@ -182,18 +234,19 @@
         <!-- Chapter 2: The Gate -->
         <div id="page2" class="page">
              <div id="image-scan-container">
-                 <img id="purnima-image" src="https://placehold.co/220x280/fbc2eb/a6c1ee?text=Purnima" alt="Photo of Purnima">
+                 <img id="purnima-image" src="purnima.jpg" alt="Photo of Purnima">
                  <div id="scanner-line"></div>
              </div>
              <div class="content-container transition-opacity duration-500 text-center">
                 <h1 class="text-3xl md:text-4xl font-romance glow-text mb-8">Chapter I: The Gates of Heaven</h1>
-                <p class="text-lg mb-6 max-w-sm">My Dearest Purnima... are you an Angel? <br> Only angels may pass these gates...</p>
+                <p id="angel-question" class="text-lg mb-6 max-w-sm fade-in-text">My Dearest Purnima... are you an Angel? <br> Only angels may pass these gates...</p>
                 <div id="initial-buttons" class="space-x-4">
-                    <button onclick="handleAnswer('yes')" class="bg-pink-500 text-white font-bold py-3 px-8 rounded-full shadow-lg transform hover:scale-110 transition-transform">YES</button>
-                    <button onclick="handleAnswer('no')" class="bg-gray-300 text-gray-800 font-bold py-3 px-8 rounded-full shadow-lg transform hover:scale-110 transition-transform">NO</button>
+                    <button onclick="handleAnswer('yes')" class="bg-pink-500 text-white font-bold py-3 px-8 rounded-full shadow-lg">YES</button>
+                    <button onclick="handleAnswer('no')" class="bg-gray-300 text-gray-800 font-bold py-3 px-8 rounded-full shadow-lg">NO</button>
                 </div>
                 <div id="result-message" class="text-lg mt-6 opacity-0 transition-opacity duration-1000 max-w-sm mx-auto" style="color: #4a2d6a;"></div>
-                <button id="turn-page-btn-2" class="turn-page-btn mt-6 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-3 px-8 rounded-full shadow-xl transform hover:scale-110 transition-transform" onclick="turnToChapter(3)">
+                <button id="try-again-btn" class="hidden mt-6 bg-yellow-500 text-white font-bold py-3 px-8 rounded-full shadow-lg transform hover:scale-110 transition-transform" onclick="resetAngelQuestion()">Try Again</button>
+                <button id="turn-page-btn-2" class="turn-page-btn mt-6 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-3 px-8 rounded-full shadow-xl" onclick="turnToChapter(3)">
                     Turn Page &rarr;
                 </button>
             </div>
@@ -202,13 +255,13 @@
         <!-- Chapter 3: The Apsara -->
         <div id="page3" class="page">
             <h1 class="text-3xl md:text-4xl font-romance glow-text mb-4">Chapter II: The Apsara</h1>
-            <p id="smile-p1" class="text-xl font-bold mb-4 max-w-md">Now, let's see that beautiful smile...</p>
-            <div id="smile-video-container">
-                <video id="smile-video" autoplay playsinline></video>
-                <div id="smile-scanner-line" class="scanner-line"></div>
+            <p id="smile-p1" class="text-xl font-bold mb-4 max-w-md fade-in-text">I see you are blushing like an angel...</p>
+            <p id="smile-p2" class="text-lg font-bold mb-4 max-w-md hidden">Scanning for smile...</p>
+            <div id="progress-container" class="hidden">
+                <div id="progress-bar"></div>
             </div>
             <p id="smile-p3" class="text-lg font-bold mt-4 max-w-md hidden"></p>
-            <button id="turn-page-btn-3" class="turn-page-btn mt-6 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-3 px-8 rounded-full shadow-xl transform hover:scale-110 transition-transform" onclick="turnToChapter(4)">
+            <button id="turn-page-btn-3" class="turn-page-btn mt-6 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-3 px-8 rounded-full shadow-xl" onclick="turnToChapter(4)">
                 Turn Page &rarr;
             </button>
         </div>
@@ -217,13 +270,13 @@
          <div id="page4" class="page">
              <div class="relative w-full h-full flex flex-col justify-center items-center p-4">
                 <h1 class="text-3xl md:text-4xl font-romance glow-text mb-8">Chapter III: The Question</h1>
-                <p class="text-2xl md:text-3xl mb-8">Do you love Deepak?</p>
+                <p class="text-2xl md:text-3xl mb-8 fade-in-text">Do you love Deepak?</p>
                 <div class="flex space-x-6 items-center">
-                    <button onclick="handleLoveAnswer('yes')" class="bg-green-500 text-white font-bold py-3 px-8 rounded-full shadow-lg transform hover:scale-110 z-10">YES</button>
+                    <button id="yes-button" onclick="handleLoveAnswer('yes')" class="bg-green-500 text-white font-bold py-3 px-8 rounded-full shadow-lg z-10 hidden">YES</button>
                     <button id="no-button" onmouseover="runawayButton(this)" ontouchstart="runawayButton(this)" class="bg-red-500 text-white font-bold py-3 px-8 rounded-full shadow-lg">NO</button>
                 </div>
                  <p id="love-confirm-msg" class="text-lg mt-8 opacity-0 transition-opacity duration-1000 max-w-md">I knew it! My heart felt it all along ❤️. I just needed to hear it from you.</p>
-                <button id="turn-page-btn-4" class="turn-page-btn absolute bottom-10 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-3 px-8 rounded-full shadow-xl transform hover:scale-110 transition-transform" onclick="turnToChapter(5)">
+                <button id="turn-page-btn-4" class="turn-page-btn absolute bottom-10 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-3 px-8 rounded-full shadow-xl" onclick="turnToChapter(5)">
                     Turn Page &rarr;
                 </button>
             </div>
@@ -233,75 +286,62 @@
         <div id="page5" class="page">
              <div class="text-center">
                 <h1 id="heart-title" class="text-3xl md:text-4xl font-romance glow-text mb-2">Chapter IV: My Heart is Yours</h1>
-                <p id="heart-counter" class="text-lg mb-2">Catch all the pieces of my heart before time runs out!</p>
+                <p id="heart-counter" class="text-lg mb-2 fade-in-text">Catch all the pieces of my heart before time runs out!</p>
                 <div id="timer" class="text-2xl font-bold text-yellow-300 mb-4">Time Left: 5s</div>
                 <div id="heart-container"></div>
                  <div id="failure-message" class="hidden mt-6">
                     <p class="text-xl mb-4">It's not easy to catch Deepak's heart... ❤️</p>
                     <button onclick="startGame()" class="bg-yellow-500 text-white font-bold py-3 px-8 rounded-full shadow-lg transform hover:scale-110 transition-transform">Try Again</button>
                 </div>
-                <button id="turn-page-btn-5" class="turn-page-btn absolute bottom-10 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-3 px-8 rounded-full shadow-xl transform hover:scale-110 transition-transform" onclick="turnToChapter(6)">
+                <button id="turn-page-btn-5" class="turn-page-btn absolute bottom-10 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-3 px-8 rounded-full shadow-xl" onclick="turnToChapter(6)">
                     Turn to the Final Chapter &rarr;
                 </button>
             </div>
         </div>
 
-        <!-- Chapter 6: Forever -->
+        <!-- Chapter 6: From the Heart (NEW COMBINED PAGE) -->
         <div id="page6" class="page">
-            <div class="z-10 text-center flex flex-col items-center">
-                <h1 class="text-3xl md:text-4xl font-romance glow-text mb-4">The Final Chapter: Forever</h1>
-                <div class="bg-black/50 p-4 rounded-lg shadow-2xl mb-6">
-                     <p class="text-lg" style="color: white; text-shadow: none;">A few words, straight from my heart ❤️</p>
-                     <div class="w-full max-w-md h-48 md:h-64 bg-gray-800 rounded-lg flex items-center justify-center text-white/50 mt-2">
-                        Your special video will be here.
-                     </div>
-                </div>
-                <h2 class="text-4xl md:text-6xl font-romance glow-text mb-6">
-                     Deepu ❤️ Puri
-                </h2>
-                 <button id="turn-page-btn-6" class="turn-page-btn bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-3 px-8 rounded-full shadow-xl transform hover:scale-110 transition-transform" onclick="turnToChapter(7)">
-                    One last surprise...
-                </button>
-            </div>
+             <div id="floating-hearts-container"></div>
+             <h1 class="text-3xl md:text-4xl font-romance glow-text mb-6">From My Heart...</h1>
+             <p id="typed-text" class="px-4"></p>
+             <button id="turn-page-btn-6" class="turn-page-btn mt-6 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-3 px-8 rounded-full shadow-xl" onclick="turnToChapter(7)">
+                One last surprise...
+             </button>
         </div>
 
-        <!-- Chapter 7: The Chit Game -->
+        <!-- Chapter 7: The Chit Game (Was Page 8) -->
         <div id="page7" class="page">
             <h1 class="text-3xl md:text-4xl font-romance glow-text mb-4">A Little Game of Fate...</h1>
-            <p id="chit-instruction" class="text-lg mb-8 max-w-sm">Pick a chit from the bowl. Let's see what your destiny holds!</p>
+            <p id="chit-instruction" class="text-lg mb-8 max-w-sm fade-in-text">Pick a chit from the bowl. Let's see what your destiny holds!</p>
             <div id="chit-bowl">
-                <div class="chit" onclick="pickChit(this)"></div>
-                <div class="chit" onclick="pickChit(this)"></div>
-                <div class="chit" onclick="pickChit(this)"></div>
-                <div class="chit" onclick="pickChit(this)"></div>
+                <div class="chit" onclick="pickChit(this)">A</div>
+                <div class="chit" onclick="pickChit(this)">B</div>
+                <div class="chit" onclick="pickChit(this)">C</div>
+                <div class="chit" onclick="pickChit(this)">D</div>
             </div>
-            <a id="whatsapp-btn" href="#" class="turn-page-btn bg-green-500 text-white font-bold py-3 px-8 rounded-full shadow-xl transform hover:scale-110 transition-transform">
-                Chat with your Special One ❤️
+            <a id="whatsapp-btn" href="#" class="turn-page-btn bg-green-500 text-white font-bold py-3 px-8 rounded-full shadow-xl">
+                Chat with Deepu ❤️
             </a>
         </div>
     </div>
 
 
     <script>
-        let currentChapter = 0;
+        let currentChapter = 1;
         let isTurning = false;
 
-        async function requestCamera() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                const videoElement = document.getElementById('smile-video');
-                videoElement.srcObject = stream;
-                document.getElementById('bg-music').play();
-                turnToChapter(1); // Move to the first real page
-            } catch (err) {
-                console.error("Camera access denied:", err);
-                document.getElementById('camera-error').classList.remove('hidden');
-            }
-        }
-
-        window.onload = () => {
-            // No timer needed, user action starts everything
-        };
+        document.body.addEventListener('click', function playMusicOnce() {
+            document.getElementById('bg-music').play().catch(e => console.error("Music autoplay failed:", e));
+            document.body.removeEventListener('click', playMusicOnce);
+        }, true);
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            const btn1 = document.getElementById('turn-page-btn-1');
+            setTimeout(() => {
+                btn1.classList.add('visible');
+                setTimeout(() => btn1.classList.add('shaking'), 500);
+            }, 2000);
+        });
 
         function turnToChapter(chapterNumber) {
             if (isTurning) return;
@@ -316,27 +356,28 @@
                 currentPageElement.classList.remove('active');
                 nextPageElement.classList.add('active');
                 
-                // Page-specific initializations
-                if (chapterNumber === 1) {
-                    setTimeout(() => document.getElementById('turn-page-btn-1').classList.add('visible'), 2000);
-                } else if (chapterNumber === 3) {
+                if (chapterNumber === 3) {
                     runSmileScanner();
+                } else if (chapterNumber === 4) {
+                    setTimeout(() => document.getElementById('yes-button').classList.remove('hidden'), 6000);
                 } else if (chapterNumber === 5) {
                     startGame();
                 } else if (chapterNumber === 6) {
-                    setTimeout(() => document.getElementById('turn-page-btn-6').classList.add('visible'), 10000); // After video time
+                    startTypingAnimation();
+                    createFloatingHearts();
                 }
 
                 setTimeout(() => {
                     nextPageElement.style.opacity = 1;
                     currentChapter = chapterNumber;
                     isTurning = false;
-                }, 100);
-            }, 1000); 
+                }, 100); 
+            }, 1000);
         }
 
         function handleAnswer(answer) {
             document.getElementById('initial-buttons').style.display = 'none';
+            document.getElementById('angel-question').style.display = 'none';
             const imageContainer = document.getElementById('image-scan-container');
             imageContainer.style.display = 'block';
             
@@ -347,38 +388,58 @@
             const resultMsg = document.getElementById('result-message');
             setTimeout(() => {
                 resultMsg.style.opacity = 1;
+                const btn2 = document.getElementById('turn-page-btn-2');
                 if (answer === 'yes') {
-                    resultMsg.innerHTML = "Scan complete... Confirmed: You are more radiant than the stars ❤️.";
-                    document.getElementById('turn-page-btn-2').classList.add('visible');
+                    resultMsg.innerHTML = "Scan complete... My heart was right. you are most beautifull girl in the world ❤️.";
+                    btn2.classList.add('visible');
+                    setTimeout(() => btn2.classList.add('shaking'), 500);
                 } else {
                     resultMsg.innerHTML = "Lie detected! My heart knows the truth... You are the most beautiful girl in the universe 😍. Let's try that again, shall we? 😘";
-                    setTimeout(() => {
-                         resultMsg.style.opacity = 0;
-                         imageContainer.style.display = 'none';
-                         document.getElementById('initial-buttons').style.display = 'flex';
-                    }, 4000);
+                    document.getElementById('try-again-btn').classList.remove('hidden');
                 }
             }, 2000);
         }
 
+        function resetAngelQuestion() {
+            document.getElementById('result-message').style.opacity = 0;
+            document.getElementById('try-again-btn').classList.add('hidden');
+            document.getElementById('image-scan-container').style.display = 'none';
+            document.getElementById('initial-buttons').style.display = 'flex';
+            document.getElementById('angel-question').style.display = 'block';
+        }
+
         function runSmileScanner() {
-            const videoContainer = document.getElementById('smile-video-container');
+            const p2 = document.getElementById('smile-p2');
             const p3 = document.getElementById('smile-p3');
-            const scanner = document.getElementById('smile-scanner-line');
+            const progressContainer = document.getElementById('progress-container');
+            const progressBar = document.getElementById('progress-bar');
             const nextButton = document.getElementById('turn-page-btn-3');
             
-            videoContainer.style.display = 'block';
-
             setTimeout(() => {
-                scanner.classList.add('scanning');
-                scanner.addEventListener('animationend', () => scanner.classList.remove('scanning'), { once: true });
+                p2.classList.remove('hidden');
+                progressContainer.classList.remove('hidden');
+                setTimeout(() => { progressBar.style.width = '70%'; }, 100);
             }, 1000);
 
             setTimeout(() => {
-                p3.innerText = "Smile Detected! Perfect! ❤️";
+                p3.innerText = "Almost there... please give me a bigger smile! 😊";
+                p3.classList.remove('hidden');
+            }, 3600);
+            
+            setTimeout(() => {
+                p3.classList.add('hidden');
+                progressBar.style.width = '0%';
+                setTimeout(() => { progressBar.style.width = '100%'; }, 100);
+            }, 8000); 
+            
+            setTimeout(() => {
+                p2.classList.add('hidden');
+                progressContainer.classList.add('hidden');
+                p3.innerText = "Perfect! Now you look just like my angel. Please, enter. ❤️";
                 p3.classList.remove('hidden');
                 nextButton.classList.add('visible');
-            }, 3500);
+                setTimeout(() => nextButton.classList.add('shaking'), 500);
+            }, 11000); 
         }
 
         function runawayButton(button) {
@@ -389,8 +450,10 @@
         function handleLoveAnswer(answer) {
             if (answer === 'yes') {
                 document.getElementById('no-button').style.display = 'none';
+                const btn4 = document.getElementById('turn-page-btn-4');
                 document.getElementById('love-confirm-msg').style.opacity = 1;
-                document.getElementById('turn-page-btn-4').classList.add('visible');
+                btn4.classList.add('visible');
+                setTimeout(() => btn4.classList.add('shaking'), 500);
             }
         }
 
@@ -398,7 +461,8 @@
         function startGame() {
             if (timerInterval) clearInterval(timerInterval);
             document.getElementById('failure-message').classList.add('hidden');
-            document.getElementById('turn-page-btn-5').classList.remove('visible');
+            const btn5 = document.getElementById('turn-page-btn-5');
+            btn5.classList.remove('visible', 'shaking');
             document.getElementById('heart-title').innerText = "Chapter IV: My Heart is Yours";
             const container = document.getElementById('heart-container');
             container.innerHTML = '';
@@ -425,9 +489,11 @@
             heartsLeft--;
             if (heartsLeft === 0) {
                 clearInterval(timerInterval);
+                const btn5 = document.getElementById('turn-page-btn-5');
                 document.getElementById('heart-title').innerText = "All hearts caught! ❤️";
                 document.getElementById('heart-counter').innerText = "You've captured every piece of my heart. It belongs to you, now and forever 🥰";
-                document.getElementById('turn-page-btn-5').classList.add('visible');
+                btn5.classList.add('visible');
+                setTimeout(() => btn5.classList.add('shaking'), 500);
                 document.getElementById('heart-container').classList.add('hidden'); document.getElementById('timer').classList.add('hidden');
             }
         }
@@ -439,56 +505,64 @@
         }
         function updateTimerDisplay() { document.getElementById('timer').innerText = `Time Left: ${timeLeft}s`; }
         
+        function startTypingAnimation() {
+            const textElement = document.getElementById('typed-text');
+            const textToType = "Hello Purnima... From the very first time I saw you, something in me changed. I still remember that night in my hostel room when we first chatted — a moment I’ll never forget. I loved how you noticed the little things about me, my shoes, my dress… even when I was too shy to say much in class. Honestly, I was a little scared of talking to girls, but with you it always felt different. Sometimes I even felt jealous when you talked to other guys, like that day in the practical lab — because deep inside, I knew you were the most precious part of my world. Your smile is brighter than the moon, your eyes more beautiful than any star. I don’t need anything else from life — just you. ❤️ Thank you for being a part of my life — it’s truly one of the most amazing moments I’ve ever lived. ✨ Hope you like this. 💕";
+            let i = 0;
+            textElement.innerHTML = "";
+            const btn6 = document.getElementById('turn-page-btn-6');
+            const typingInterval = setInterval(() => {
+                if (i < textToType.length) {
+                    textElement.innerHTML = textToType.substring(0, i + 1) + '<span class="typing-cursor"></span>';
+                    i++;
+                } else {
+                    clearInterval(typingInterval);
+                    textElement.innerHTML = textToType; // Remove cursor when done
+                    btn6.classList.add('visible');
+                    setTimeout(() => btn6.classList.add('shaking'), 8000); // 8 second delay
+                }
+            }, 50); // Typing speed
+        }
+        
+        function createFloatingHearts() {
+            const container = document.getElementById('floating-hearts-container');
+            container.innerHTML = '';
+            for (let i = 0; i < 15; i++) {
+                const heart = document.createElement('div');
+                heart.className = 'floating-heart';
+                heart.innerHTML = '❤';
+                heart.style.left = `${Math.random() * 100}%`;
+                heart.style.animationDuration = `${(Math.random() * 5) + 5}s`; // 5-10 seconds
+                heart.style.animationDelay = `${Math.random() * 5}s`;
+                heart.style.fontSize = `${(Math.random() * 15) + 10}px`;
+                container.appendChild(heart);
+            }
+        }
+
         function pickChit(pickedChit) {
             const allChits = document.querySelectorAll('.chit');
             allChits.forEach(chit => {
                 if(chit !== pickedChit) {
-                    chit.style.opacity = '0';
-                    chit.style.pointerEvents = 'none';
+                    chit.style.display = 'none'; 
                 }
             });
             pickedChit.classList.add('unfolding');
-            pickedChit.onclick = null; // Disable further clicks
+            pickedChit.onclick = null;
             pickedChit.innerHTML = "Wow! You picked the special one's number...";
             document.getElementById('chit-instruction').style.display = 'none';
             
-            // IMPORTANT: Replace '1234567890' with your full phone number including country code (e.g., 91 for India)
-            const yourPhoneNumber = '911234567890';
+            const yourPhoneNumber = '917347303128';
             const message = encodeURIComponent('I love you so much much Deepu');
-            const whatsappLink = `https://wa.me/${yourPhoneNumber}?text=${message}`;
+            const whatsappLink = `https://wa.me/${917347303128r}?text=${i love you deepu}`;
             const whatsappBtn = document.getElementById('whatsapp-btn');
             whatsappBtn.href = whatsappLink;
 
             setTimeout(() => {
                 whatsappBtn.classList.add('visible');
+                setTimeout(() => whatsappBtn.classList.add('shaking'), 500);
             }, 2000);
         }
 
     </script>
 </body>
 </html>
-```
-
-### **Crucial Next Steps for You**
-
-This romantic story is almost ready! Here are the two simple things you **must** do:
-
-**1. How to Add Purnima's Photo (for the scanner):**
-
-1.  Go to a free image hosting website like [Postimages](https://postimages.org/).
-2.  Upload a beautiful portrait photo of Purnima.
-3.  After uploading, the site will give you several links. Copy the link that is labeled **"Direct Link"**. It should end in `.jpg` or `.png`.
-4.  In the `index.html` file, find this line (around line 200):
-    ```html
-    <img id="purnima-image" src="https://placehold.co/220x280/fbc2eb/a6c1ee?text=Purnima" alt="Photo of Purnima">
-    ```
-5.  **Replace** the long `https://placehold.co/...` URL with the "Direct Link" you copied.
-
-**2. How to Set Your WhatsApp Number:**
-
-1.  In the `index.html` file, scroll all the way down to the JavaScript section at the bottom.
-2.  Find this line (around line 437):
-    ```javascript
-    const yourPhoneNumber = '917347303128'; 
-    
-
